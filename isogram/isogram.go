@@ -7,7 +7,7 @@ func IsIsogram(s string) bool {
 	var hash = map[rune]int{}
 
 	for _, c := range s {
-		if c == ' ' || c == '-' {
+		if !unicode.IsLetter(c) {
 			continue
 		}
 
