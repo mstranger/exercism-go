@@ -1,5 +1,7 @@
 package pythagorean
 
+// TODO: try solove with goroutines and channels.
+
 import "math"
 
 type Triplet [3]int
@@ -25,7 +27,7 @@ func Range(min, max int) []Triplet {
 // Sum returns a list of all Pythagorean triplets where the sum a+b+c = p
 func Sum(p int) []Triplet {
 	result := make([]Triplet, 0)
-	tripletsList := Range(1, p)
+	tripletsList := Range(1, p/2)
 
 	for _, t := range tripletsList {
 		sum := t[0] + t[1] + t[2]
