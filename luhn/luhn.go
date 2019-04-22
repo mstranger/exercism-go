@@ -15,18 +15,17 @@ func Valid(s string) bool {
 		return false
 	}
 
-	for i, j := len(s)-1, 0; i >= 0; i, j = i-1, j+1 {
-		n, err := strconv.Atoi(string(s[i]))
+	for i, v := range s {
+		n, err := strconv.Atoi(string(v))
 		if err != nil {
 			return false
 		}
 
-		// every second, starting from the right
-		if j&1 == 1 {
-			if 2*n > 9 {
-				n = 2*n - 9
-			} else {
-				n = 2 * n
+		// double every second digit, starting from the right
+		if (len(s)-i)&1 == 0 {
+			n *= 2
+			if n > 9 {
+				n -= 9
 			}
 		}
 
