@@ -9,48 +9,33 @@ import (
 // Encode implements the classic method for composing secret messages
 // called a square code.
 func Encode(input string) string {
-	if input == "" {
-		return ""
-	}
-
-	chunks := make([]string, 0)
-	encoded := make([]string, 0)
-	var output string
-
+	var cipher strings.Builder
 	// normalize
-	re := regexp.MustCompile(`[^a-z0-9]`)
-	output = re.ReplaceAllLiteralString(strings.ToLower(input), "")
+	input = strings.ToLower(
+		regexp.MustCompile("[[:^word:]]").ReplaceAllString(input, ""))
 
-	// "abcdefgh" -> ["abc" "def" "gh"]
-	r, c := squareSides(len(output)) // row, column
-	for i := 0; i < r*c; i += c {
-		if i+c < len(output) {
-			chunks = append(chunks, output[i:i+c])
-		} else {
-			chunks = append(chunks, output[r*c-c:])
+	// transpose r and c in the output square
+	c, r := plainSquareSides(len(input)) // row, column
+
+	for i := 0; i < r; i++ {
+		if i != 0 {
+			cipher.WriteByte(' ')
+		}
+		for j := 0; j < c; j++ {
+			cur := i + j*r
+			if cur < len(input) {
+				cipher.WriteByte(input[cur])
+			} else {
+				cipher.WriteByte(' ')
+			}
 		}
 	}
 
-	// add spaces to the last chunk, "abc" -> ["ab", "c "]
-	last := chunks[len(chunks)-1]
-	if len(last) < c {
-		chunks[len(chunks)-1] = chunks[len(chunks)-1] + strings.Repeat(" ", c-len(last))
-	}
-
-	// encode
-	for j := 0; j < c; j++ {
-		s := ""
-		for i := 0; i < r; i++ {
-			s += string(chunks[i][j])
-		}
-		encoded = append(encoded, s)
-	}
-
-	return strings.Join(encoded, " ")
+	return cipher.String()
 }
 
-// squareSides returns the sides of the crypto square.
-func squareSides(square int) (int, int) {
+// plainSquareSides returns the sides of the input crypto square.
+func plainSquareSides(square int) (int, int) {
 	side := int(math.Sqrt(float64(square)))
 
 	// 25 -> 5 x 5
