@@ -15,20 +15,21 @@ func Valid(s string) bool {
 		return false
 	}
 
-	for i, v := range s {
+	double := len(s)%2 == 0
+	for _, v := range s {
 		n, err := strconv.Atoi(string(v))
 		if err != nil {
 			return false
 		}
 
-		// double every second digit, starting from the right
-		if (len(s)-i)&1 == 0 {
+		if double {
 			n *= 2
 			if n > 9 {
 				n -= 9
 			}
 		}
 
+		double = !double
 		sum += n
 	}
 
