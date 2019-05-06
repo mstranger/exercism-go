@@ -2,6 +2,8 @@ package variablelengthquantity
 
 import "fmt"
 
+// TODO: here
+
 // EncodeVarint encodes list of ints as series of bytes.
 func EncodeVarint(input []uint32) []byte {
 	output := make([]byte, 0)
