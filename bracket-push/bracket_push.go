@@ -6,9 +6,27 @@ var matched = map[rune]rune{
 	'{': '}',
 }
 
+// Stack represents a rune container with a LIFO rule.
+type Stack []rune
+
+// Push adds an element to the stack.
+func (s *Stack) Push(e rune) {
+	*s = append(*s, e)
+}
+
+// Pop gets the last item from the stack and returns it.
+func (s *Stack) Pop() rune {
+	var e rune
+	if len(*s) > 0 {
+		e = (*s)[len(*s)-1]
+		*s = (*s)[:len(*s)-1]
+	}
+	return e
+}
+
 // Bracket verifies that any and all pairs are matched and nested correctly.
 func Bracket(input string) bool {
-	stack := make([]rune, 0)
+	stack := Stack{}
 
 	for _, s := range input {
 		// skip any other symbol
@@ -18,18 +36,11 @@ func Bracket(input string) bool {
 		}
 
 		if v, ok := matched[s]; ok {
-			stack = append(stack, v)
+			stack.Push(v)
 		} else {
-			// example: "]"
-			if len(stack) == 0 {
+			if e := stack.Pop(); e != s {
 				return false
 			}
-			e := stack[len(stack)-1]
-			// if current s doesn't match with last e in stack
-			if e != s {
-				return false
-			}
-			stack = stack[:len(stack)-1]
 		}
 	}
 
