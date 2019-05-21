@@ -1,6 +1,9 @@
 package tree
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // Record represents the relation between node and parent node.
 type Record struct {
@@ -20,35 +23,39 @@ func Build(records []Record) (*Node, error) {
 		return nil, nil
 	}
 
-	// node ID is a uniq number from 0 to n
-	// so it can be represented by an array index
-	// the value of this element is the parent ID
-	childsID := make([]int, len(records))
-	// each record is a Node in the tree structure
-	nodes := make([]*Node, len(records))
+	sort.Slice(records, func(i, j int) bool {
+		return records[i].ID < records[j].ID
+	})
+
+	nodes := make(map[int]*Node, len(records))
 
 	for _, r := range records {
-		err := checkErrors(r, len(records), nodes)
-		if err != nil {
+		if err := checkErrors(r, len(records), nodes); err != nil {
 			return nil, err
 		}
 
-		childsID[r.ID] = r.Parent
-		nodes[r.ID] = &Node{ID: r.ID}
-	}
-
-	for id, parent := range childsID {
-		if id == 0 {
+		if r.ID == 0 {
+			nodes[0] = &Node{ID: 0}
 			continue
 		}
 
-		nodes[parent].Children = append(nodes[parent].Children, nodes[id])
+		// current node doesn't exist
+		if _, ok := nodes[r.ID]; !ok {
+			nodes[r.ID] = &Node{ID: r.ID}
+		}
+
+		// parent node doesn't exist
+		if _, ok := nodes[r.Parent]; !ok {
+			nodes[r.Parent] = &Node{ID: r.Parent}
+		}
+
+		nodes[r.Parent].Children = append(nodes[r.Parent].Children, nodes[r.ID])
 	}
 
 	return nodes[0], nil
 }
 
-func checkErrors(r Record, size int, nodes []*Node) error {
+func checkErrors(r Record, size int, nodes map[int]*Node) error {
 	if r.ID == 0 && r.Parent != 0 {
 		return fmt.Errorf("invalid root node")
 	}
@@ -61,7 +68,7 @@ func checkErrors(r Record, size int, nodes []*Node) error {
 	if r.ID < r.Parent {
 		return fmt.Errorf("ID must be greater than Parent")
 	}
-	if nodes[r.ID] != nil {
+	if _, ok := nodes[r.ID]; ok {
 		return fmt.Errorf("duplicate node")
 	}
 
