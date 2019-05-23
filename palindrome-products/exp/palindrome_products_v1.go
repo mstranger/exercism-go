@@ -1,59 +1,68 @@
-package main
+package palindrome
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
+// Product represets a palindrome.
 type Product struct {
 	Product        int
 	Factorizations [][2]int
 }
 
-// Function to calculate largest
-// palindrome which is product of
-// two n-digits numbers
-func palindrome(fmin, fmax int) (pmax, pmin Product) {
+// Products finds the largest and smallest palindromes
+// which are products of numbers within given range.
+func Products(fmin, fmax int) (pmin, pmax Product, err error) {
+	if fmax < fmin {
+		err = fmt.Errorf("fmin > fmax")
+		return
+	}
 
-	upper_limit, lower_limit := fmax, fmin
-
-	// initialize result
-	// max_product := 0
-	// for i := upper_limit; i >= lower_limit; i-- {
-	// for j := i; j >= lower_limit; j-- {
-	for i := lower_limit; i <= upper_limit; i++ {
-		for j := i; j <= upper_limit; j++ {
-			// calculating product of
-			// two n-digit numbers
-			product := i * j
-			if product < pmax.Product {
-				break
-			}
-			number := product
-			reverse := 0
-
-			// calculating reverse of
-			// product to check whether
-			// it is palindrome or not
-			for number != 0 {
-				reverse = reverse*10 + number%10
-				number /= 10
-			}
-
-			// update new product if exist
-			// and if greater than previous one
-			if product == reverse && product >= pmax.Product {
-				if product == pmax.Product {
-					pmax.Factorizations = append(pmax.Factorizations, [2]int{i, j})
-				} else {
-					pmax.Product = product
-					pmax.Factorizations = [][2]int{{i, j}}
+	pmin = Product{fmax * fmax, [][2]int{}}
+	pmax = Product{fmin * fmin, [][2]int{}}
+	for i := fmin; i <= fmax; i++ {
+		for j := i; j <= fmax; j++ {
+			if p := i * j; isPalindrome(p) {
+				if p <= pmin.Product {
+					if p == pmin.Product {
+						pmin.Factorizations = append(pmin.Factorizations, [2]int{i, j})
+					} else {
+						pmin.Product = p
+						pmin.Factorizations = [][2]int{{i, j}}
+					}
 				}
-
+				if p >= pmax.Product {
+					if p == pmax.Product {
+						pmax.Factorizations = append(pmax.Factorizations, [2]int{i, j})
+					} else {
+						pmax.Product = p
+						pmax.Factorizations = [][2]int{{i, j}}
+					}
+				}
 			}
 		}
+	}
+
+	if len(pmin.Factorizations) == 0 && len(pmax.Factorizations) == 0 {
+		err = fmt.Errorf("no palindromes")
+		return
 	}
 
 	return
 }
 
-func main() {
-	fmt.Println(palindrome(10, 99))
+// check if given number is palindrome
+func isPalindrome(n int) bool {
+	s := strconv.Itoa(n)
+	return s == reverse(s)
+}
+
+// reverse string
+func reverse(s string) string {
+	chars := []rune(s)
+	for i, j := 0, len(chars)-1; i < j; i, j = i+1, j-1 {
+		chars[i], chars[j] = chars[j], chars[i]
+	}
+	return string(chars)
 }
