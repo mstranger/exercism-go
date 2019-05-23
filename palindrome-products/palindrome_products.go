@@ -1,9 +1,8 @@
 package palindrome
 
-import (
-	"fmt"
-	"strconv"
-)
+import "fmt"
+
+// NOTE: in this variant the benchmark increased speed by 15 times (20 vs 300)
 
 // Product represets a palindrome.
 type Product struct {
@@ -14,32 +13,30 @@ type Product struct {
 // Products finds the largest and smallest palindromes
 // which are products of numbers within given range.
 func Products(fmin, fmax int) (pmin, pmax Product, err error) {
+	pmin.Product = fmin * fmax
+
 	if fmax < fmin {
 		err = fmt.Errorf("fmin > fmax")
 		return
 	}
 
-	pmin = Product{fmax * fmax, [][2]int{}}
-	pmax = Product{fmin * fmin, [][2]int{}}
 	for i := fmin; i <= fmax; i++ {
 		for j := i; j <= fmax; j++ {
-			if p := i * j; isPalindrome(p) {
-				if p <= pmin.Product {
-					if p == pmin.Product {
-						pmin.Factorizations = append(pmin.Factorizations, [2]int{i, j})
-					} else {
-						pmin.Product = p
-						pmin.Factorizations = [][2]int{{i, j}}
-					}
-				}
-				if p >= pmax.Product {
-					if p == pmax.Product {
-						pmax.Factorizations = append(pmax.Factorizations, [2]int{i, j})
-					} else {
-						pmax.Product = p
-						pmax.Factorizations = [][2]int{{i, j}}
-					}
-				}
+			product := i * j
+
+			// find reverse
+			number, reverse := product, 0
+			for number != 0 {
+				reverse = reverse*10 + number%10
+				number /= 10
+			}
+
+			if product == reverse && product >= pmax.Product {
+				updateProduct(&pmax, product, i, j)
+			}
+
+			if product == reverse && product <= pmin.Product {
+				updateProduct(&pmin, product, i, j)
 			}
 		}
 	}
@@ -52,17 +49,13 @@ func Products(fmin, fmax int) (pmin, pmax Product, err error) {
 	return
 }
 
-// check if given number is palindrome
-func isPalindrome(n int) bool {
-	s := strconv.Itoa(n)
-	return s == reverse(s)
-}
-
-// reverse string
-func reverse(s string) string {
-	chars := []rune(s)
-	for i, j := 0, len(chars)-1; i < j; i, j = i+1, j-1 {
-		chars[i], chars[j] = chars[j], chars[i]
+// update Product struct
+func updateProduct(p *Product, product, i, j int) {
+	if product == p.Product {
+		// only add new pair i and j
+		p.Factorizations = append(p.Factorizations, [2]int{i, j})
+	} else {
+		p.Product = product
+		p.Factorizations = [][2]int{{i, j}}
 	}
-	return string(chars)
 }

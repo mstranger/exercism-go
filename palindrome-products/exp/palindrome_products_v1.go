@@ -10,20 +10,16 @@ type Product struct {
 // Function to calculate largest
 // palindrome which is product of
 // two n-digits numbers
-func palindrome(n int) (pmax Product) {
+func palindrome(fmin, fmax int) (pmax, pmin Product) {
 
-	upper_limit := 0
-	for i := 1; i <= n; i++ {
-		upper_limit *= 10
-		upper_limit += 9
-	}
-
-	lower_limit := 1 + upper_limit/10
+	upper_limit, lower_limit := fmax, fmin
 
 	// initialize result
 	// max_product := 0
-	for i := upper_limit; i >= lower_limit; i-- {
-		for j := i; j >= lower_limit; j-- {
+	// for i := upper_limit; i >= lower_limit; i-- {
+	// for j := i; j >= lower_limit; j-- {
+	for i := lower_limit; i <= upper_limit; i++ {
+		for j := i; j <= upper_limit; j++ {
 			// calculating product of
 			// two n-digit numbers
 			product := i * j
@@ -44,8 +40,13 @@ func palindrome(n int) (pmax Product) {
 			// update new product if exist
 			// and if greater than previous one
 			if product == reverse && product >= pmax.Product {
-				pmax.Product = product
-				pmax.Factorizations = append(pmax.Factorizations, [2]int{i, j})
+				if product == pmax.Product {
+					pmax.Factorizations = append(pmax.Factorizations, [2]int{i, j})
+				} else {
+					pmax.Product = product
+					pmax.Factorizations = [][2]int{{i, j}}
+				}
+
 			}
 		}
 	}
@@ -54,5 +55,5 @@ func palindrome(n int) (pmax Product) {
 }
 
 func main() {
-	fmt.Println(palindrome(2))
+	fmt.Println(palindrome(10, 99))
 }
