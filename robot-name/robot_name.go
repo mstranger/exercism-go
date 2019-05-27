@@ -30,23 +30,14 @@ func (r *Robot) Name() (string, error) {
 	}
 	// namespace exhausted
 	if len(names) >= maxNamesCount {
-		// fmt.Println(names)
 		return "", fmt.Errorf("max namespace")
 	}
 
-	var nameExist bool
-
-	for !nameExist {
+	for r.name = name(); names[r.name]; {
 		r.name = name()
-
-		// the name already exist, generate again
-		if names[r.name] {
-			continue
-		}
-
-		names[r.name] = true
-		nameExist = true
 	}
+
+	names[r.name] = true
 
 	return r.name, nil
 }
