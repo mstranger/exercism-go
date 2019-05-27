@@ -3,7 +3,6 @@ package robotname
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -12,11 +11,16 @@ type Robot struct {
 	name string
 }
 
-// max number of combinations of 2 letters and 3 digits.
+// max number of combinations of 2 letters and 3 digits
 const maxNamesCount = 26 * 26 * 10 * 10 * 10
 
 // used names
 var names = map[string]bool{}
+
+// not necessary
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Name returns the robot's name if its exists, or generates a new one.
 func (r *Robot) Name() (string, error) {
@@ -25,36 +29,24 @@ func (r *Robot) Name() (string, error) {
 		return r.name, nil
 	}
 	// namespace exhausted
-	if len(names) == maxNamesCount {
+	if len(names) >= maxNamesCount {
+		// fmt.Println(names)
 		return "", fmt.Errorf("max namespace")
 	}
 
-	var s strings.Builder
-	var charCode int
+	var nameExist bool
 
-	// generate random name
-	t := rand.NewSource(time.Now().UnixNano())
-	randSourse := rand.New(t)
-	for i := 0; i < 5; i++ {
-		if i < 2 {
-			// from 'A'..'Z'
-			charCode = 65 + randSourse.Intn(26)
-		} else {
-			// from '0'..'9'
-			charCode = 48 + randSourse.Intn(10)
+	for !nameExist {
+		r.name = name()
+
+		// the name already exist, generate again
+		if names[r.name] {
+			continue
 		}
-		s.WriteByte(byte(charCode))
-	}
 
-	// a robot with the same name already exists,
-	// reset the current one and generate it again
-	if names[s.String()] {
-		r.Reset()
-		return r.Name()
+		names[r.name] = true
+		nameExist = true
 	}
-
-	r.name = s.String()
-	names[r.name] = true
 
 	return r.name, nil
 }
@@ -62,4 +54,12 @@ func (r *Robot) Name() (string, error) {
 // Reset wipes the current robot's name.
 func (r *Robot) Reset() {
 	r.name = ""
+}
+
+// generate a random name, such as `AB123`.
+func name() string {
+	r1 := string(rand.Intn(26) + 'A')
+	r2 := string(rand.Intn(26) + 'A')
+	n := rand.Intn(1000)
+	return fmt.Sprintf("%s%s%03d", r1, r2, n)
 }

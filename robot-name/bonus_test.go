@@ -9,7 +9,12 @@ var maxNames = 26 * 26 * 10 * 10 * 10
 func TestCollisions(t *testing.T) {
 	// Test uniqueness for new robots.
 	for i := len(seen); i <= maxNames-600000; i++ {
-		_ = New().getName(t, false)
+		// _ = New().getName(t, false)
+
+		n := New().getName(t, false)
+		if !namePat.MatchString(n) {
+			t.Errorf(`Invalid robot name %q, want form "AA###".`, n)
+		}
 	}
 
 	// Test that names aren't recycled either.
