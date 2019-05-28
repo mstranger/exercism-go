@@ -15,7 +15,7 @@ type Robot struct {
 const maxNamesCount = 26 * 26 * 10 * 10 * 10
 
 // used names
-var names = map[string]bool{}
+var used = map[string]bool{}
 
 // not necessary
 func init() {
@@ -29,15 +29,16 @@ func (r *Robot) Name() (string, error) {
 		return r.name, nil
 	}
 	// namespace exhausted
-	if len(names) >= maxNamesCount {
+	if len(used) >= maxNamesCount {
 		return "", fmt.Errorf("max namespace")
 	}
 
-	for r.name = name(); names[r.name]; {
+	r.name = name()
+	for used[r.name] {
 		r.name = name()
 	}
 
-	names[r.name] = true
+	used[r.name] = true
 
 	return r.name, nil
 }
