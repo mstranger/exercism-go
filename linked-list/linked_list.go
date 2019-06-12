@@ -1,23 +1,26 @@
 package linkedlist
 
-// package main
-
 import "fmt"
 
+// ErrEmptyList contains an error for an empty list.
 var ErrEmptyList error = fmt.Errorf("empty list")
 
 // Element represents a Node for the linked list.
+// It holds a value and pointers to the next and previous elements.
 type Element struct {
 	Val  interface{}
 	prev *Element
 	next *Element
 }
 
+// List represents a doubly linked list structure.
+// It holds references to the first and last node.
 type List struct {
 	first *Element
 	last  *Element
 }
 
+// NewList creates a new list from the given arguments.
 func NewList(args ...interface{}) *List {
 	list := List{}
 	var prev *Element
@@ -31,35 +34,38 @@ func NewList(args ...interface{}) *List {
 		if i == len(args)-1 {
 			list.last = &e
 		}
-
 		if prev != nil {
 			prev.next = &e
 		}
 
 		e.prev = prev
-
 		prev = &e
 	}
 
 	return &list
 }
 
+// Next returns a pointer to the next Node (Element).
 func (e *Element) Next() *Element {
 	return e.next
 }
 
+// Prev returns a pointer to the previous Node (Element).
 func (e *Element) Prev() *Element {
 	return e.prev
 }
 
+// First returns a pointer to the first element in the list.
 func (l *List) First() *Element {
 	return l.first
 }
 
+// Last returns a pointer to the last element in the list.
 func (l *List) Last() *Element {
 	return l.last
 }
 
+// PushFront adds a new node to the top (from left) of the list.
 func (l *List) PushFront(v interface{}) {
 	e := Element{Val: v}
 	if l.Empty() {
@@ -72,6 +78,7 @@ func (l *List) PushFront(v interface{}) {
 	l.first = &e
 }
 
+// PushBack adds a new node to the end (from right) of the list.
 func (l *List) PushBack(v interface{}) {
 	e := Element{Val: v}
 	if l.Empty() {
@@ -84,6 +91,8 @@ func (l *List) PushBack(v interface{}) {
 	l.last = &e
 }
 
+// PopFront removes a node from the top of the list.
+// Returns this node and error.
 func (l *List) PopFront() (interface{}, error) {
 	if l.Empty() {
 		return 0, ErrEmptyList
@@ -99,6 +108,8 @@ func (l *List) PopFront() (interface{}, error) {
 	return v.Val, nil
 }
 
+// PopBack removes a node from the end of the list.
+// Returns this node and error.
 func (l *List) PopBack() (interface{}, error) {
 	if l.Empty() {
 		return 0, ErrEmptyList
@@ -115,6 +126,7 @@ func (l *List) PopBack() (interface{}, error) {
 	return v.Val, nil
 }
 
+// Reverse flips a list in place.
 func (l *List) Reverse() *List {
 	if l.Empty() {
 		*l = *NewList()
@@ -134,11 +146,12 @@ func (l *List) Reverse() *List {
 	return l
 }
 
+// Empty checks if the list is empty.
 func (l *List) Empty() bool {
 	return l.first == nil && l.last == nil
 }
 
-// Print displays a list.
+// Print displays the list.
 func (l *List) Print() {
 	if l.Empty() {
 		fmt.Println("{ }")
@@ -153,27 +166,3 @@ func (l *List) Print() {
 	}
 	fmt.Print(e.Val, " }\n")
 }
-
-// func main() {
-// 	list := NewList(1, 2, 3, 4, 5)
-// 	list.Reverse()
-// 	list.Print()
-// 	// 	// 	list.PushFront(0)
-// 	// 	// 	list.PushBack(5)
-// 	// 	// 	fmt.Printf("first: %+v\n", list.first)
-// 	// 	// 	fmt.Printf("last: %+v\n", list.last)
-// 	// 	// 	fmt.Printf("after first: %+v\n", list.first.Next())
-// 	// 	// 	fmt.Printf("before last: %+v\n", list.last.Prev())
-
-// 	// 	// 	list.Print()
-// 	// 	// 	list.Reverse().Print()
-
-// 	// 	list := NewList(3, 4)
-// 	// 	v, _ := list.PopBack()
-// 	// 	fmt.Println(v)
-// 	// 	v, _ = list.PopBack()
-// 	// 	fmt.Println(v)
-// 	// 	v, err := list.PopBack()
-// 	// 	fmt.Println(v, err)
-// 	// 	list.Print()
-// }
