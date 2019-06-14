@@ -1,39 +1,26 @@
-// package tournament
-
-package main
+package tournament
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 )
 
-// Team respresents team name.
-type Team string
-
-// Matches respresents matches played.
-type Matches struct {
+// contains win and loss of the team
+type team struct {
+	name                             string
 	played, won, drawn, lost, points int
 }
 
-// TeamResult is a result for one command.
-type TeamResult struct {
-	Team
-	Matches
-}
-
-// Results keeps track of the score.
-type Results map[Team]Matches
+// keeps track of the score
+type teamsScores map[string]team
 
 // Tally summarizes the competition.
 func Tally(input io.Reader, output io.Writer) error {
-	// reader := bufio.NewReader(input)
-	table := NewTable()
-
 	scanner := bufio.NewScanner(input)
+	scores := make(teamsScores)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -41,87 +28,67 @@ func Tally(input io.Reader, output io.Writer) error {
 			continue
 		}
 
-		if err := addToResultsTable(line, table); err != nil {
+		if err := scores.addGameScore(line); err != nil {
 			return err
 		}
 	}
 
-	output.Write([]byte(table.String()))
-
-	/*
-		for {
-			line, err := reader.ReadString('\n')
-			if err == io.EOF && line == "" {
-				break
-			}
-
-			line = strings.TrimSpace(line)
-			// skip comments or empty lines
-			if strings.HasPrefix(line, "#") || line == "" {
-				continue
-			}
-
-			if err := addToResultsTable(line, table); err != nil {
-				return err
-			}
-		}
-
-		output.Write([]byte(table.String()))
-	*/
+	scores.Write(output)
 
 	return nil
 }
 
-// NewTable creates a new results table.
-func NewTable() *Results {
-	return &Results{}
-}
+// Write formats and writes scores, sorted by points.
+func (t teamsScores) Write(w io.Writer) {
+	fmt.Fprintf(w, "Team%-27s| MP |  W |  D |  L |  P\n", " ")
 
-// String implements Stringer interface for Results type.
-func (r *Results) String() string {
-	s := fmt.Sprintf("Team%-27s| MP |  W |  D |  L |  P\n", " ")
-
-	t := toArray(r)
-	// sort array by points
-	sort.Slice(t, func(i, j int) bool {
-		if t[i].points == t[j].points {
-			return t[i].Team < t[j].Team
+	teams := allTeams(t)
+	sort.Slice(teams, func(i, j int) bool {
+		if teams[i].points == teams[j].points {
+			return teams[i].name < teams[j].name
 		}
-		return t[i].points > t[j].points
+		return teams[i].points > teams[j].points
 	})
 
-	for _, v := range t {
-		s1 := fmt.Sprintf("%-31s| %2d | %2d | %2d | %2d | %2d\n",
-			v.Team, v.played, v.won, v.drawn, v.lost, v.points)
-		s += s1
-	}
-
-	return s
-}
-
-// Join combines two results.
-func (r *Results) Join(t *Results) {
-	for k, v := range *t {
-		matches := (*r)[k]
-		matches.played += v.played
-		matches.won += v.won
-		matches.lost += v.lost
-		matches.drawn += v.drawn
-		matches.points += v.points
-		(*r)[k] = matches
+	for _, team := range teams {
+		fmt.Fprintf(w, "%-31s| %2d | %2d | %2d | %2d | %2d\n",
+			team.name, team.played, team.won, team.drawn, team.lost, team.points)
 	}
 }
 
-func addToResultsTable(line string, t *Results) error {
+// add game result to overall score
+func (t teamsScores) addGameScore(line string) error {
 	r := strings.Split(line, ";")
 	if len(r) != 3 {
 		return fmt.Errorf("invalid line")
 	}
 
-	t1 := Matches{played: 1}
-	t2 := Matches{played: 1}
+	t1, ok := t[r[0]]
+	if !ok {
+		t1 = team{name: r[0]}
+	}
 
-	switch r[2] {
+	t2, ok := t[r[1]]
+	if !ok {
+		t2 = team{name: r[1]}
+	}
+
+	err := play(&t1, &t2, r[2])
+	if err != nil {
+		return err
+	}
+
+	t[r[0]], t[r[1]] = t1, t2
+
+	return nil
+}
+
+// add game result to the given teams
+func play(t1, t2 *team, result string) error {
+	t1.played++
+	t2.played++
+
+	switch result {
 	case "win":
 		t1.won++
 		t1.points += 3
@@ -136,48 +103,17 @@ func addToResultsTable(line string, t *Results) error {
 		t2.drawn++
 		t2.points++
 	default:
-		return fmt.Errorf("undefined result")
+		return fmt.Errorf("undefine match result")
 	}
-
-	// curent match
-	m := Results{
-		Team(r[0]): t1,
-		Team(r[1]): t2,
-	}
-
-	// join current result with results table
-	t.Join(&m)
 
 	return nil
 }
 
-func toArray(r *Results) []TeamResult {
-	res := make([]TeamResult, 0)
-
-	for k, v := range *r {
-		t := TeamResult{
-			Team:    k,
-			Matches: v,
-		}
-		res = append(res, t)
+// get slice with all teams and their results
+func allTeams(t teamsScores) []team {
+	res := make([]team, 0)
+	for _, team := range t {
+		res = append(res, team)
 	}
-
 	return res
-}
-
-func main() {
-	input := `
-Allegoric Alaskians;Blithering Badgers;win
-Devastating Donkeys;Courageous Californians;draw
-Devastating Donkeys;Allegoric Alaskians;win
-Courageous Californians;Blithering Badgers;loss
-Blithering Badgers;Devastating Donkeys;loss
-Allegoric Alaskians;Courageous Californians;win
-`
-
-	var out bytes.Buffer
-
-	Tally(strings.NewReader(input), &out)
-
-	fmt.Println(out.String())
 }
