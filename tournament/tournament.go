@@ -1,7 +1,10 @@
-package tournament
+// package tournament
+
+package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"sort"
@@ -27,17 +30,13 @@ type Results map[Team]Matches
 
 // Tally summarizes the competition.
 func Tally(input io.Reader, output io.Writer) error {
-	reader := bufio.NewReader(input)
+	// reader := bufio.NewReader(input)
 	table := NewTable()
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF && line == "" {
-			break
-		}
+	scanner := bufio.NewScanner(input)
 
-		line = strings.TrimSpace(line)
-		// skip comments or empty lines
+	for scanner.Scan() {
+		line := scanner.Text()
 		if strings.HasPrefix(line, "#") || line == "" {
 			continue
 		}
@@ -48,6 +47,27 @@ func Tally(input io.Reader, output io.Writer) error {
 	}
 
 	output.Write([]byte(table.String()))
+
+	/*
+		for {
+			line, err := reader.ReadString('\n')
+			if err == io.EOF && line == "" {
+				break
+			}
+
+			line = strings.TrimSpace(line)
+			// skip comments or empty lines
+			if strings.HasPrefix(line, "#") || line == "" {
+				continue
+			}
+
+			if err := addToResultsTable(line, table); err != nil {
+				return err
+			}
+		}
+
+		output.Write([]byte(table.String()))
+	*/
 
 	return nil
 }
@@ -143,4 +163,21 @@ func toArray(r *Results) []TeamResult {
 	}
 
 	return res
+}
+
+func main() {
+	input := `
+Allegoric Alaskians;Blithering Badgers;win
+Devastating Donkeys;Courageous Californians;draw
+Devastating Donkeys;Allegoric Alaskians;win
+Courageous Californians;Blithering Badgers;loss
+Blithering Badgers;Devastating Donkeys;loss
+Allegoric Alaskians;Courageous Californians;win
+`
+
+	var out bytes.Buffer
+
+	Tally(strings.NewReader(input), &out)
+
+	fmt.Println(out.String())
 }
