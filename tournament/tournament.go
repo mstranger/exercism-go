@@ -60,15 +60,9 @@ func addGameScore(t map[string]team, line string) error {
 		return fmt.Errorf("invalid line")
 	}
 
-	t1, ok := t[r[0]]
-	if !ok {
-		t1 = team{name: r[0]}
-	}
-
-	t2, ok := t[r[1]]
-	if !ok {
-		t2 = team{name: r[1]}
-	}
+	t1, t2 := t[r[0]], t[r[1]]
+	t1.name = r[0]
+	t2.name = r[1]
 
 	err := play(&t1, &t2, r[2])
 	if err != nil {
