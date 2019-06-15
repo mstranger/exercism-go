@@ -14,13 +14,10 @@ type team struct {
 	played, won, drawn, lost, points int
 }
 
-// keeps track of the score
-type teamsScores map[string]team
-
 // Tally summarizes the competition.
 func Tally(input io.Reader, output io.Writer) error {
 	scanner := bufio.NewScanner(input)
-	scores := make(teamsScores)
+	var scores = map[string]team{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -28,18 +25,18 @@ func Tally(input io.Reader, output io.Writer) error {
 			continue
 		}
 
-		if err := scores.addGameScore(line); err != nil {
+		if err := addGameScore(scores, line); err != nil {
 			return err
 		}
 	}
 
-	scores.Write(output)
+	Write(scores, output)
 
 	return nil
 }
 
 // Write formats and writes scores, sorted by points.
-func (t teamsScores) Write(w io.Writer) {
+func Write(t map[string]team, w io.Writer) {
 	fmt.Fprintf(w, "Team%-27s| MP |  W |  D |  L |  P\n", " ")
 
 	teams := allTeams(t)
@@ -57,7 +54,7 @@ func (t teamsScores) Write(w io.Writer) {
 }
 
 // add game result to overall score
-func (t teamsScores) addGameScore(line string) error {
+func addGameScore(t map[string]team, line string) error {
 	r := strings.Split(line, ";")
 	if len(r) != 3 {
 		return fmt.Errorf("invalid line")
@@ -110,7 +107,7 @@ func play(t1, t2 *team, result string) error {
 }
 
 // get slice with all teams and their results
-func allTeams(t teamsScores) []team {
+func allTeams(t map[string]team) []team {
 	res := make([]team, 0)
 	for _, team := range t {
 		res = append(res, team)
