@@ -2,14 +2,9 @@ package twelve
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 	"strings"
-	"text/template"
 )
-
-const tmpl = `
-On the {{.data.DayString}} day of Christmas my true love gave to me: {{listAll .idx}} in a Pear Tree.
-`
 
 type twelveDays struct {
 	DayString, GiftCount, Gift string
@@ -46,24 +41,11 @@ func Verse(n int) string {
 		return ""
 	}
 
-	tmpl, err := template.New("twelve").Funcs(template.FuncMap{
-		"listAll": giftsOnDay,
-	}).Parse(tmpl)
-	if err != nil {
-		log.Println(err)
-	}
+	s := fmt.Sprintf(
+		"On the %s day of Christmas my true love gave to me: %s in a Pear Tree.",
+		gifts[n-1].DayString, giftsOnDay(n))
 
-	var b bytes.Buffer
-
-	err = tmpl.Execute(&b, map[string]interface{}{
-		"idx":  n,
-		"data": gifts[n-1],
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	return strings.TrimSpace(b.String())
+	return s
 }
 
 // return a list of all gifts for the day
