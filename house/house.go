@@ -1,17 +1,14 @@
 package house
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
 
-type actor struct {
+var actors = []struct {
 	name   string
 	action string
-}
-
-var actors = []actor{
+}{
 	{"house", "Jack built"},
 	{"malt", "lay in"},
 	{"rat", "ate"},
@@ -43,7 +40,7 @@ func Verse(n int) string {
 
 // Song returns the liric "This is the House that Jack Built".
 func Song() string {
-	var b bytes.Buffer
+	var b strings.Builder
 	for i := 1; i <= 12; i++ {
 		b.WriteString(Verse(i))
 		b.WriteString("\n\n")
