@@ -1,7 +1,6 @@
 package twelve
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
@@ -27,7 +26,7 @@ var gifts = []twelveDays{
 
 // Song outputs the lirics "The Twelve Days of Christmas".
 func Song() string {
-	var b bytes.Buffer
+	var b strings.Builder
 	for i := 1; i <= 12; i++ {
 		b.WriteString(Verse(i))
 		b.WriteString("\n")
@@ -45,18 +44,17 @@ func Verse(n int) string {
 		"On the %s day of Christmas my true love gave to me: %s in a Pear Tree.",
 		gifts[n-1].DayString, giftsOnDay(n))
 
-	if n == 1 {
-		s = strings.Replace(s, " and", "", -1)
-	}
-
 	return s
 }
 
 // return a list of all gifts for the day
 func giftsOnDay(n int) string {
 	if n == 1 {
-		return "and " + gifts[0].Gift
+		return gifts[0].Gift
+	}
+	if n == 2 {
+		return gifts[1].Gift + ", and " + giftsOnDay(1)
 	}
 
-	return strings.Join([]string{gifts[n-1].Gift, giftsOnDay(n - 1)}, ", ")
+	return gifts[n-1].Gift + ", " + giftsOnDay(n-1)
 }
