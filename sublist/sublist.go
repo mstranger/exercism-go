@@ -5,65 +5,26 @@ type Relation string
 
 // Sublist determines if the first list is contained within the second list.
 func Sublist(l1, l2 []int) Relation {
-	order := true
-	// the first list should be shorter
-	if len(l2) < len(l1) {
-		l1, l2 = l2, l1
-		order = false
-	}
-
-	if len(l1) == len(l2) && equal(l1, l2) {
-		return "equal"
-	}
-
-	// empty list
-	if len(l1) == 0 {
-		if order {
-			return "sublist"
-		}
+	switch {
+	case len(l1) < len(l2) && isSub(l1, l2):
+		return "sublist"
+	case len(l1) > len(l2) && isSub(l2, l1):
 		return "superlist"
-	}
-
-	ids := findAllIdx(l2, l1[0])
-
-	if len(ids) == 0 {
+	case equal(l1, l2):
+		return "equal"
+	default:
 		return "unequal"
 	}
-
-	for _, i := range ids {
-
-		if i+len(l1) > len(l2) {
-			return "unequal"
-		}
-
-		sub := l2[i : i+len(l1)]
-
-		b := equal(l1, sub)
-
-		if b && order {
-			return "sublist"
-		}
-
-		if b && !order {
-			return "superlist"
-		}
-
-	}
-
-	return "unequal"
 }
 
-// find all positions for the given value
-func findAllIdx(l []int, e int) []int {
-	ids := make([]int, 0)
-
-	for i, v := range l {
-		if v == e {
-			ids = append(ids, i)
+// check if the first list is a sublist for the second list
+func isSub(l1, l2 []int) bool {
+	for i := 0; i <= len(l2)-len(l1); i++ {
+		if equal(l1, l2[i:i+len(l1)]) {
+			return true
 		}
 	}
-
-	return ids
+	return false
 }
 
 // compare two lists
