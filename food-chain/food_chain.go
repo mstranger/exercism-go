@@ -2,6 +2,8 @@ package foodchain
 
 import "strings"
 
+const TestVerstion = 1
+
 var actors = []struct {
 	name  string
 	aside string
