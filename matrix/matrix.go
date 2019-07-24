@@ -10,7 +10,7 @@ import (
 type Matrix [][]int
 
 // New creates a new matrix from a given string.
-func New(s string) (Matrix, error) {
+func New(s string) (*Matrix, error) {
 	var m Matrix
 
 	for _, row := range strings.Split(s, "\n") {
@@ -31,7 +31,7 @@ func New(s string) (Matrix, error) {
 		return nil, err
 	}
 
-	return m, nil
+	return &m, nil
 }
 
 // Rows return matrix rows (independent copy).
