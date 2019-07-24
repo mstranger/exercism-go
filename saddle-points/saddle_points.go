@@ -1,37 +1,46 @@
 package matrix
 
-import "sort"
-
+// Pair is a pair of ints
 type Pair struct {
 	r, c int
 }
 
+// Saddle finds the saddle points in a matrix
 func (m Matrix) Saddle() []Pair {
 	res := make([]Pair, 0)
+	cols := m.Cols()
 
-	for i := 0; i < len(m); i++ {
-		for j := 0; j < len(m[i]); j++ {
-			_, maxRow := minmaxIntSlice(m.Rows()[i])
-			minCol, _ := minmaxIntSlice(m.Cols()[j])
-
-			if m[i][j] == maxRow && m[i][j] == minCol {
+	for i, row := range m {
+		for j, cell := range row {
+			if is(cell, row, max) && is(cell, cols[j], min) {
 				res = append(res, Pair{i, j})
 			}
 		}
 	}
 
-	if len(res) == 0 {
-		return nil
-	}
-
 	return res
 }
 
-func minmaxIntSlice(v []int) (int, int) {
-	t := make([]int, len(v))
-	copy(t, v)
-	sort.Ints(t)
-	return t[0], t[len(t)-1]
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
-const testVersion = 1
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func is(n int, arr []int, f func(int, int) int) bool {
+	m := arr[0]
+	for _, v := range arr {
+		m = f(m, v)
+	}
+	return n == m
+}
+
+const testVersion = 2
