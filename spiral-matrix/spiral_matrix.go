@@ -17,6 +17,7 @@ func fillSpiral(m [][]int, s int) int {
 	current := s
 	n := len(m)
 
+	// traverse matrix in spiral order
 	for t := n; t > n/2; t-- {
 		for j := n - t; j < t; j++ {
 			m[n-t][j] = current
