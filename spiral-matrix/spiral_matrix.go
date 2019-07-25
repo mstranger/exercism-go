@@ -1,52 +1,43 @@
-package main
+package spiralmatrix
 
-import (
-	"fmt"
-)
-
+// SpiralMatrix builds a square matrix (n x n) of numbers in spiral order.
 func SpiralMatrix(n int) [][]int {
 	res := make([][]int, n)
 	for i := range res {
 		res[i] = make([]int, n)
 	}
 
-	rots := 0
-	current := 1
-
-	for rots < 4 {
-		for i, v := range res[0] {
-			if v != 0 {
-				continue
-			}
-
-			res[0][i] = current
-			current++
-		}
-		rotLeft(res)
-		rots++
-	}
+	fillSpiral(res, 1)
 
 	return res
 }
 
-func rotLeft(m [][]int) {
-	l := len(m)
+// fillSpiral fills the given matrix with numbers
+func fillSpiral(m [][]int, s int) int {
+	current := s
+	n := len(m)
 
-	for i := 0; i < l; i++ {
-		for j := i; j >= 0; j-- {
-			m[i][j], m[j][i] = m[j][i], m[i][j]
+	for t := n; t > n/2; t-- {
+		for j := n - t; j < t; j++ {
+			m[n-t][j] = current
+			current++
+		}
+
+		for i := n - t + 1; i < t; i++ {
+			m[i][t-1] = current
+			current++
+		}
+
+		for j := t - 2; j > n-t; j-- {
+			m[t-1][j] = current
+			current++
+		}
+
+		for i := t - 1; i > n-t; i-- {
+			m[i][n-t] = current
+			current++
 		}
 	}
 
-	for i, j := 0, len(m)-1; i < j; i, j = i+1, j-1 {
-		m[i], m[j] = m[j], m[i]
-	}
-}
-
-func main() {
-	m := SpiralMatrix(4)
-	// m := [][]int{{1, 2, 3}, {8, 9, 4}, {}}
-	// fmt.Println(m)
-	// rotLeft(m)
-	fmt.Println(m)
+	return current
 }
