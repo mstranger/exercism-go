@@ -6,13 +6,12 @@ func Use(o ResourceOpener, input string) (err error) {
 	var data Resource
 
 	data, err = o()
-	if err != nil {
-		// if TransientError, then keep trying to open
-		if _, ok := err.(TransientError); ok {
-			return Use(o, input)
+	for err != nil {
+		if _, ok := err.(TransientError); !ok {
+			return err
 		}
-		// just return an error otherwise
-		return err
+		// keep trying to open
+		data, err = o()
 	}
 
 	defer data.Close()
