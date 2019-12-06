@@ -40,6 +40,9 @@ func (acc *Account) Close() (int64, bool) {
 
 // Balance returns the current amount of money.
 func (acc *Account) Balance() (int64, bool) {
+	acc.mux.Lock()
+	defer acc.mux.Unlock()
+
 	if !acc.active {
 		return 0, false
 	}
