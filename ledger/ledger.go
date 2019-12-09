@@ -31,9 +31,7 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		for !success {
 			success = true
 			for i, e := range rest {
-				if (m1[e.Date == first.Date]*m2[e.Date < first.Date]*4 +
-					m1[e.Description == first.Description]*m2[e.Description < first.Description]*2 +
-					m1[e.Change == first.Change]*m2[e.Change < first.Change]*1) < 0 {
+				if checkFirst(m1, m2, first, e) {
 					es[0], es[i+1] = es[i+1], es[0]
 					success = false
 				}
@@ -42,30 +40,18 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		es = es[1:]
 	}
 
-	var s string
-	if locale == "nl-NL" {
-		s = "Datum" +
-			strings.Repeat(" ", 10-len("Datum")) +
-			" | " +
-			"Omschrijving" +
-			strings.Repeat(" ", 25-len("Omschrijving")) +
-			" | " + "Verandering" + "\n"
-	} else if locale == "en-US" {
-		s = "Date" +
-			strings.Repeat(" ", 10-len("Date")) +
-			" | " +
-			"Description" +
-			strings.Repeat(" ", 25-len("Description")) +
-			" | " + "Change" + "\n"
-	} else {
+	s, ok := translateLedger(locale)
+	if !ok {
 		return "", errors.New("")
 	}
+
 	// Parallelism, always a great idea
 	co := make(chan struct {
 		i int
 		s string
 		e error
 	})
+
 	for i, et := range entriesCopy {
 		go func(i int, entry Entry) {
 			if len(entry.Date) != 10 {
@@ -222,4 +208,33 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		s += ss[i]
 	}
 	return s, nil
+}
+
+func checkFirst(m1, m2 map[bool]int, e1, e2 Entry) bool {
+	return (m1[e2.Date == e1.Date]*m2[e2.Date < e1.Date]*4 +
+		m1[e2.Description == e1.Description]*m2[e2.Description < e1.Description]*2 +
+		m1[e2.Change == e1.Change]*m2[e2.Change < e1.Change]*1) < 0
+}
+
+func translateLedger(locale string) (string, bool) {
+	switch locale {
+	case "nl-NL":
+		return "Datum" +
+				strings.Repeat(" ", 10-len("Datum")) +
+				" | " +
+				"Omschrijving" +
+				strings.Repeat(" ", 25-len("Omschrijving")) +
+				" | " + "Verandering" + "\n",
+			true
+	case "en-US":
+		return "Date" +
+				strings.Repeat(" ", 10-len("Date")) +
+				" | " +
+				"Description" +
+				strings.Repeat(" ", 25-len("Description")) +
+				" | " + "Change" + "\n",
+			true
+	default:
+		return "", false
+	}
 }
