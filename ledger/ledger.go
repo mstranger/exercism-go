@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Entry represents one record
 type Entry struct {
 	// "Y-m-d"
 	Date        string
@@ -20,19 +21,28 @@ type chunk struct {
 	e error
 }
 
+func defaultEntry() Entry {
+	return Entry{Date: "2014-01-01", Description: "", Change: 0}
+}
+
+// FormatLedger prints a nicely formatted ledger
 func FormatLedger(currency string, locale string, entries []Entry) (string, error) {
 	var entriesCopy []Entry
+
 	for _, e := range entries {
 		entriesCopy = append(entriesCopy, e)
 	}
 	if len(entries) == 0 {
-		if _, err := FormatLedger(currency, "en-US", []Entry{{Date: "2014-01-01", Description: "", Change: 0}}); err != nil {
+		_, err := FormatLedger(currency, "en-US", []Entry{defaultEntry()})
+		if err != nil {
 			return "", err
 		}
 	}
+
 	m1 := map[bool]int{true: 0, false: 1}
 	m2 := map[bool]int{true: -1, false: 1}
 	es := entriesCopy
+
 	for len(es) > 1 {
 		first, rest := es[0], es[1:]
 		success := false
@@ -53,14 +63,23 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		return "", errors.New("")
 	}
 
-	// Parallelism, always a great idea
 	co := make(chan chunk)
 
 	for i, et := range entriesCopy {
-		go parseEntry(i, et, locale, currency, co)
+		go writeToChan(i, et, locale, currency, co)
 	}
-	ss := make([]string, len(entriesCopy))
-	for range entriesCopy {
+
+	s, err := readFromChan(s, entriesCopy, co)
+	if err != nil {
+		return "", err
+	}
+
+	return s, nil
+}
+
+func readFromChan(s string, entries []Entry, co <-chan chunk) (string, error) {
+	ss := make([]string, len(entries))
+	for range entries {
 		v := <-co
 		if v.e != nil {
 			return "", v.e
@@ -68,7 +87,7 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		ss[v.i] = v.s
 	}
 
-	for i := 0; i < len(entriesCopy); i++ {
+	for i := 0; i < len(entries); i++ {
 		s += ss[i]
 	}
 
@@ -104,7 +123,7 @@ func translateLedger(locale string) (string, bool) {
 	}
 }
 
-func parseEntry(i int, entry Entry, locale, currency string, co chan<- chunk) {
+func writeToChan(i int, entry Entry, locale, currency string, co chan<- chunk) {
 	if len(entry.Date) != 10 {
 		co <- chunk{e: errors.New("")}
 	}
