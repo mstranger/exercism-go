@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // Entry represents one record
@@ -18,6 +19,11 @@ type chunk struct {
 	i int
 	s string
 	e error
+}
+
+// dict helps print currency according to the lang ("nl-NL", "en-US")
+type dict struct {
+	sb, delim1, delim2, delim3, se string
 }
 
 func defaultEntry() Entry {
@@ -130,115 +136,113 @@ func readFromChan(s string, entries []Entry, co <-chan chunk) (string, error) {
 // write data to the channel
 func writeToChan(i int, entry Entry, locale, currency string, co chan<- chunk) {
 	if len(entry.Date) != 10 {
-		co <- chunk{e: errors.New("")}
+		sendError(co)
 	}
-	d1, d2, d3, d4, d5 := entry.Date[0:4], entry.Date[4], entry.Date[5:7], entry.Date[7], entry.Date[8:10]
-	if d2 != '-' {
-		co <- chunk{e: errors.New("")}
+
+	d1, d2, d3, d4, d5 := parseDate(entry.Date)
+	if d2 != '-' || d4 != '-' {
+		sendError(co)
 	}
-	if d4 != '-' {
-		co <- chunk{e: errors.New("")}
-	}
-	de := entry.Description
-	if len(de) > 25 {
-		de = de[:22] + "..."
-	} else {
-		de = de + strings.Repeat(" ", 25-len(de))
-	}
-	var d string
-	if locale == "nl-NL" {
-		d = d5 + "-" + d3 + "-" + d1
-	} else if locale == "en-US" {
-		d = d3 + "/" + d5 + "/" + d1
-	}
+
+	de := foldDescription(entry.Description)
+
 	negative := false
 	cents := entry.Change
 	if cents < 0 {
 		cents = cents * -1
 		negative = true
 	}
-	var a string
-	if locale == "nl-NL" {
-		if currency == "EUR" {
-			a += "€"
-		} else if currency == "USD" {
-			a += "$"
-		} else {
-			co <- chunk{e: errors.New("")}
-		}
-		a += " "
-		centsStr := strconv.Itoa(cents)
-		switch len(centsStr) {
-		case 1:
-			centsStr = "00" + centsStr
-		case 2:
-			centsStr = "0" + centsStr
-		}
-		rest := centsStr[:len(centsStr)-2]
-		var parts []string
-		for len(rest) > 3 {
-			parts = append(parts, rest[len(rest)-3:])
-			rest = rest[:len(rest)-3]
-		}
-		if len(rest) > 0 {
-			parts = append(parts, rest)
-		}
-		for i := len(parts) - 1; i >= 0; i-- {
-			a += parts[i] + "."
-		}
-		a = a[:len(a)-1]
-		a += ","
-		a += centsStr[len(centsStr)-2:]
-		if negative {
-			a += "-"
-		} else {
-			a += " "
-		}
-	} else if locale == "en-US" {
-		if negative {
-			a += "("
-		}
-		if currency == "EUR" {
-			a += "€"
-		} else if currency == "USD" {
-			a += "$"
-		} else {
-			co <- chunk{e: errors.New("")}
-		}
-		centsStr := strconv.Itoa(cents)
-		switch len(centsStr) {
-		case 1:
-			centsStr = "00" + centsStr
-		case 2:
-			centsStr = "0" + centsStr
-		}
-		rest := centsStr[:len(centsStr)-2]
-		var parts []string
-		for len(rest) > 3 {
-			parts = append(parts, rest[len(rest)-3:])
-			rest = rest[:len(rest)-3]
-		}
-		if len(rest) > 0 {
-			parts = append(parts, rest)
-		}
-		for i := len(parts) - 1; i >= 0; i-- {
-			a += parts[i] + ","
-		}
-		a = a[:len(a)-1]
-		a += "."
-		a += centsStr[len(centsStr)-2:]
-		if negative {
-			a += ")"
-		} else {
-			a += " "
-		}
+
+	var a, d string
+	switch locale {
+	case "nl-NL":
+		dt := dict{"", " ", ",", ".", "-"}
+		a = joinCurrency(dt, a, cents, negative, currency, co)
+		d = d5 + "-" + d3 + "-" + d1
+	case "en-US":
+		dt := dict{"(", "", ".", ",", ")"}
+		a = joinCurrency(dt, a, cents, negative, currency, co)
+		d = d3 + "/" + d5 + "/" + d1
+	default:
+		sendError(co)
+	}
+
+	al := utf8.RuneCountInString(a)
+
+	co <- chunk{
+		i: i,
+		s: d +
+			strings.Repeat(" ", 10-len(d)) +
+			" | " + de + " | " +
+			strings.Repeat(" ", 13-al) + a + "\n",
+	}
+}
+
+// send error to the channel
+func sendError(target chan<- chunk) {
+	target <- chunk{e: errors.New("")}
+}
+
+// parse given date in format "YYYY-MM-DD"
+func parseDate(date string) (string, byte, string, byte, string) {
+	return date[0:4], date[4], date[5:7], date[7], date[8:10]
+}
+
+// replace long string with <...> sign
+func foldDescription(de string) string {
+	if len(de) > 25 {
+		de = de[:22] + "..."
 	} else {
-		co <- chunk{e: errors.New("")}
+		de = de + strings.Repeat(" ", 25-len(de))
 	}
-	var al int
-	for range a {
-		al++
+
+	return de
+}
+
+// help function, join formatted currency to the output
+func joinCurrency(d dict, a string, cents int, negative bool, currency string, co chan<- chunk) string {
+	if currency == "EUR" {
+		a += "€"
+	} else if currency == "USD" {
+		a += "$"
+	} else {
+		sendError(co)
 	}
-	co <- chunk{i: i, s: d + strings.Repeat(" ", 10-len(d)) + " | " + de + " | " +
-		strings.Repeat(" ", 13-al) + a + "\n"}
+
+	a += d.delim1
+
+	centsStr := strconv.Itoa(cents)
+	switch len(centsStr) {
+	case 1:
+		centsStr = "00" + centsStr
+	case 2:
+		centsStr = "0" + centsStr
+	}
+	rest := centsStr[:len(centsStr)-2]
+
+	var parts []string
+
+	for len(rest) > 3 {
+		parts = append(parts, rest[len(rest)-3:])
+		rest = rest[:len(rest)-3]
+	}
+	if len(rest) > 0 {
+		parts = append(parts, rest)
+	}
+
+	for i := len(parts) - 1; i >= 0; i-- {
+		a += parts[i] + d.delim3
+	}
+	a = a[:len(a)-1]
+
+	a += d.delim2
+	a += centsStr[len(centsStr)-2:]
+
+	if negative {
+		a = d.sb + a + d.se
+	} else {
+		a += " "
+	}
+
+	return a
 }
