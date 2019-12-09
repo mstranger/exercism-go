@@ -8,13 +8,12 @@ import (
 
 // Entry represents one record
 type Entry struct {
-	// "Y-m-d"
 	Date        string
 	Description string
-	// in cents
-	Change int
+	Change      int
 }
 
+// for write to channel
 type chunk struct {
 	i int
 	s string
@@ -39,24 +38,7 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 		}
 	}
 
-	m1 := map[bool]int{true: 0, false: 1}
-	m2 := map[bool]int{true: -1, false: 1}
-	es := entriesCopy
-
-	for len(es) > 1 {
-		first, rest := es[0], es[1:]
-		success := false
-		for !success {
-			success = true
-			for i, e := range rest {
-				if checkFirst(m1, m2, first, e) {
-					es[0], es[i+1] = es[i+1], es[0]
-					success = false
-				}
-			}
-		}
-		es = es[1:]
-	}
+	sortEntries(entriesCopy)
 
 	s, ok := translateLedger(locale)
 	if !ok {
@@ -77,6 +59,57 @@ func FormatLedger(currency string, locale string, entries []Entry) (string, erro
 	return s, nil
 }
 
+// display records by date in ASC order
+func sortEntries(es []Entry) {
+	m1 := map[bool]int{true: 0, false: 1}
+	m2 := map[bool]int{true: -1, false: 1}
+
+	for len(es) > 1 {
+		first, rest := es[0], es[1:]
+		success := false
+		for !success {
+			success = true
+			for i, e := range rest {
+				if checkOrder(m1, m2, first, e) {
+					es[0], es[i+1] = es[i+1], es[0]
+					success = false
+				}
+			}
+		}
+		es = es[1:]
+	}
+}
+
+// check records in ASC order
+func checkOrder(m1, m2 map[bool]int, e1, e2 Entry) bool {
+	return (m1[e2.Date == e1.Date]*m2[e2.Date < e1.Date]*4 +
+		m1[e2.Description == e1.Description]*m2[e2.Description < e1.Description]*2 +
+		m1[e2.Change == e1.Change]*m2[e2.Change < e1.Change]*1) < 0
+}
+
+// output in lang according to the given locale
+func translateLedger(locale string) (string, bool) {
+	switch locale {
+	case "nl-NL":
+		return "Datum" +
+				strings.Repeat(" ", 10-len("Datum")) +
+				" | " + "Omschrijving" +
+				strings.Repeat(" ", 25-len("Omschrijving")) +
+				" | " + "Verandering" + "\n",
+			true
+	case "en-US":
+		return "Date" +
+				strings.Repeat(" ", 10-len("Date")) +
+				" | " + "Description" +
+				strings.Repeat(" ", 25-len("Description")) +
+				" | " + "Change" + "\n",
+			true
+	default:
+		return "", false
+	}
+}
+
+// read data from the channel
 func readFromChan(s string, entries []Entry, co <-chan chunk) (string, error) {
 	ss := make([]string, len(entries))
 	for range entries {
@@ -94,35 +127,7 @@ func readFromChan(s string, entries []Entry, co <-chan chunk) (string, error) {
 	return s, nil
 }
 
-func checkFirst(m1, m2 map[bool]int, e1, e2 Entry) bool {
-	return (m1[e2.Date == e1.Date]*m2[e2.Date < e1.Date]*4 +
-		m1[e2.Description == e1.Description]*m2[e2.Description < e1.Description]*2 +
-		m1[e2.Change == e1.Change]*m2[e2.Change < e1.Change]*1) < 0
-}
-
-func translateLedger(locale string) (string, bool) {
-	switch locale {
-	case "nl-NL":
-		return "Datum" +
-				strings.Repeat(" ", 10-len("Datum")) +
-				" | " +
-				"Omschrijving" +
-				strings.Repeat(" ", 25-len("Omschrijving")) +
-				" | " + "Verandering" + "\n",
-			true
-	case "en-US":
-		return "Date" +
-				strings.Repeat(" ", 10-len("Date")) +
-				" | " +
-				"Description" +
-				strings.Repeat(" ", 25-len("Description")) +
-				" | " + "Change" + "\n",
-			true
-	default:
-		return "", false
-	}
-}
-
+// write data to the channel
 func writeToChan(i int, entry Entry, locale, currency string, co chan<- chunk) {
 	if len(entry.Date) != 10 {
 		co <- chunk{e: errors.New("")}
